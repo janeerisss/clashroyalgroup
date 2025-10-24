@@ -3,134 +3,25 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>AR.js + A‑Frame — Solo cámara (Marcador)</title>
-  <!-- A‑Frame & AR.js -->
+  <title>AR.js + A-Frame — Hiro (Sim/Cam)</title>
+
+  <!-- Librerías: A-Frame primero, luego AR.js -->
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.js"></script>
-  <style>
-    :root {
-      --bg:#0b1020; --card:#121a35; --ink:#eaf1ff; --muted:#a9b6d1; --accent:#6aa8ff;
-      --shadow: 0 10px 30px rgba(0,0,0,.35);
-      --radius: 18px;
-      --safe-top: env(safe-area-inset-top); --safe-bottom: env(safe-area-inset-bottom);
-    }
-    html,body{margin:0;padding:0;background:#000;height:100%;overflow:hidden;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto}
-    .ui{position:fixed;inset:0;pointer-events:none}
-    .topbar{position:absolute;left:12px;right:12px;top:calc(10px + var(--safe-top));display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:16px;background:linear-gradient(180deg,rgba(18,26,53,.85),rgba(11,16,32,.6));backdrop-filter:blur(10px);box-shadow:var(--shadow);pointer-events:auto;color:var(--ink)}
-    .brand{display:flex;gap:.6rem;align-items:center}
-    .brand .dot{width:10px;height:10px;border-radius:999px;background:var(--accent);box-shadow:0 0 12px rgba(106,168,255,.9)}
-    .title{font-weight:700;letter-spacing:.2px}
-    .pill{padding:6px 10px;border-radius:999px;background:#0f1730;color:var(--muted);font-size:.8rem}
-    .btn{pointer-events:auto;border:0;border-radius:14px;background:#1a2650;color:var(--ink);padding:10px 12px;font-weight:600;display:inline-flex;gap:.5rem;align-items:center;box-shadow:var(--shadow)}
-    .card{position:absolute;left:12px;right:12px;bottom:calc(14px + var(--safe-bottom));border-radius:var(--radius);background:linear-gradient(180deg,rgba(18,26,53,.9),rgba(11,16,32,.8));box-shadow:var(--shadow);color:var(--ink);padding:12px 14px;pointer-events:auto}
-    .card h3{margin:0 0 .25rem;font-size:1rem}
-    .card p{margin:0;color:var(--muted);font-size:.92rem;line-height:1.2}
-    .hidden{display:none !important}
-    .loader{position:fixed;inset:0;background:radial-gradient(80% 60% at 50% 20%, rgba(18,26,53,.9), rgba(6,9,18,.95));display:grid;place-items:center;color:var(--ink);z-index:5}
-    .spin{width:44px;height:44px;border-radius:999px;border:4px solid rgba(255,255,255,.15);border-top-color:var(--accent);animation:rot 1s linear infinite;margin-bottom:12px}
-    @keyframes rot{to{transform:rotate(360deg)}}
-    .loader .t{color:var(--muted);font-size:.95rem}
-    .modal{position:fixed;inset:0;display:none;align-items:flex-end;background:rgba(0,0,0,.35);backdrop-filter:blur(2px);z-index:6}
-    .modal.open{display:flex}
-    .sheet{background:#0b1020;color:var(--ink);border-top-left-radius:22px;border-top-right-radius:22px;padding:18px 16px 24px;box-shadow:var(--shadow);width:100%}
-    .sheet h2{margin:0 0 .25rem}
-    .sheet ol{margin:.2rem 0 .6rem 1rem;color:var(--muted)}
-    .sheet .actions{display:flex;justify-content:flex-end;margin-top:.5rem}
-    .badge{background:#11224f;color:#cfe1ff;border-radius:999px;padding:2px 8px;font-size:.75rem}
-    .stack{display:flex;flex-wrap:wrap;gap:.4rem}
-  </style>
+
+  <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
-  <div id="loader" class="loader">
-    <div>
-      <div class="spin"></div>
-      <div style="text-align:center">
-        <div style="font-weight:700">Cargando AR</div>
-        <div class="t">Concede permiso de <b>cámara</b> cuando se solicite.</div>
-      </div>
-    </div>
+  <!-- HUD -->
+  <div id="hud">
+    <div id="status" class="badge">Cargando…</div>
+    <button id="modeBtn" class="btn">🔀 Cambiar modo</button>
   </div>
 
-  <div class="ui">
-    <div class="topbar">
-      <div class="brand"><div class="dot"></div><div class="title">Demo AR — Solo cámara</div></div>
-      <div class="row">
-        <div id="statusPill" class="pill">Cam: —</div>
-        <button id="helpBtn" class="btn" aria-label="Ayuda">❓ Ayuda</button>
-      </div>
-    </div>
+  <!-- Lienzo para la escena -->
+  <div id="stage"></div>
 
-    <div id="hintCard" class="card">
-      <h3>Instrucciones</h3>
-      <p>Apunta al marcador <b>Hiro</b> para ver el modelo. Abre esta página por <b>HTTPS</b> y permite el uso de la <b>cámara</b>.</p>
-      <div class="stack" style="margin-top:.6rem">
-        <span class="badge">HTTPS</span><span class="badge">Permitir cámara</span>
-      </div>
-    </div>
-  </div>
-
-  <div id="helpModal" class="modal" role="dialog" aria-modal="true">
-    <div class="sheet">
-      <h2>¿Cómo verlo en el teléfono?</h2>
-      <ol>
-        <li>Abre esta página en <b>HTTPS</b> (GitHub Pages/Netlify/Vercel o túnel).</li>
-        <li>Permite el uso de la <b>cámara</b> cuando el navegador lo pida.</li>
-        <li>Apunta al marcador <i>hiro</i> (impreso o en otra pantalla).</li>
-      </ol>
-      <div class="actions"><button id="closeHelp" class="btn">Entendido</button></div>
-    </div>
-  </div>
-
-  <!-- Escena AR solo cámara/marker -->
-  <a-scene id="scene"
-           vr-mode-ui="enabled: false"
-           embedded
-           renderer="alpha:true; antialias:true"
-           arjs="sourceType: camera; trackingMethod: best; debugUIEnabled:false;">
-
-    <!-- Cámara AR -->
-    <a-entity camera></a-entity>
-
-    <!-- Luces -->
-    <a-entity light="type: ambient; intensity: 1"></a-entity>
-    <a-entity light="type: directional; intensity: 0.6" position="0 1 1"></a-entity>
-
-    <!-- Marcador Hiro con contenido -->
-<a-marker id="markerHiro" preset="hiro">
-  <!-- Tu escena -->
-  <a-plane position="0 0 0" rotation="-90 0 0" width="1.5" height="1.5" color="#666"></a-plane>
-  <a-box position="0 0.25 0" width="0.5" height="0.5" depth="0.5" color="#00BCD4"></a-box>
-  <a-text value="Grupo 1" position="0 1 0" align="center" scale="1.8 1.8 1.8"></a-text>
-</a-marker>
-
-    <!-- Requerido por AR.js para el video de la cámara -->
-    <a-entity camera></a-entity>
-  </a-scene>
-
-  <script>
-    const els = {
-      loader: document.getElementById('loader'),
-      statusPill: document.getElementById('statusPill'),
-      helpBtn: document.getElementById('helpBtn'),
-      helpModal: document.getElementById('helpModal'),
-      closeHelp: document.getElementById('closeHelp'),
-      scene: document.getElementById('scene'),
-    };
-
-    // Oculta loader cuando la escena esté lista
-    window.addEventListener('load', () => {
-      els.scene.addEventListener('loaded', () => setTimeout(() => els.loader.classList.add('hidden'), 300));
-    });
-
-    // Marca cámara OK cuando el video se inyecta
-    let camOK = false;
-    function renderStatus(){ els.statusPill.textContent = `Cam: ${camOK ? '✔' : '—'}`; }
-    document.addEventListener('arjs-video-loaded', () => { camOK = true; renderStatus(); });
-    renderStatus();
-
-    // Ayuda
-    els.helpBtn.addEventListener('click', () => els.helpModal.classList.add('open'));
-    els.closeHelp.addEventListener('click', () => els.helpModal.classList.remove('open'));
-  </script>
+  <!-- Tu lógica JS -->
+  <script src="./app.js"></script>
 </body>
 </html>
